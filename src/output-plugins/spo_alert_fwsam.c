@@ -253,6 +253,7 @@ typedef struct _FWsampacket2            /* 4 blocks (3rd block is header from Tw
 typedef struct _FWsamoptions    /* snort rule options */
 {
     unsigned long   sid;
+    unsigned long   gid;
     unsigned long   duration;
     unsigned char   who;
     unsigned char   how;
@@ -281,7 +282,7 @@ void FWsamFree(FWsamList *fwsamlist);
 int FWsamStationExists(FWsamStation *who, FWsamList *list);
 int FWsamReadLine(char *, unsigned long, FILE *);
 void FWsamParseLine(FWsamOptions *, char *);
-FWsamOptions *FWsamGetOption(unsigned long);
+FWsamOptions *FWsamGetOption(unsigned long, unsigned long);
 int FWsamParseOption(FWsamOptions *, char *);
 
 
@@ -822,34 +823,79 @@ int FWsamParseOption(FWsamOptions *optp,char *ap)
 void FWsamParseLine(FWsamOptions *optp,char *buf)
 {
     char *ap;
+    char *ap_gid;
+    char *ap_end;
+    int b_gid=0;
+    int i_gid_size=0;
+    int i_ap_size=0;
+    char s_buf[1024];
 
     ap=buf; /* start at the beginning of the argument */
-
+    ap_gid=buf;
+    ap_end=buf;
     while(*ap)
     {
         if(isspace(*ap))        /* normalize spaces (tabs into space, etc) */
             *ap=' ';
         if(isupper(*ap))        /* and set to lower case */
             *ap=tolower(*ap);
+
+	if(*ap=='_'||*ap=='-')
+        {
+            ap_gid=ap;
+	    i_gid_size=i_ap_size;
+	    b_gid=1;
+        }
+        if(*ap==':' || *ap=='|') ap_end=ap;
+
+	i_ap_size++;
         ap++;
     }
     while((ap=strrchr(buf,' '))!=NULL)  /* remove spaces */
         strcpy(ap,ap+1);
 
     ap=buf;
-    if(*ap)
+    
+    if(b_gid==1)
     {
-        while(*ap && *ap!=':' && *ap!='|') ap++;
-        *ap++ =0;
-        while(*ap && (*ap==':' || *ap=='|')) ap++;
-
-        optp->sid=(unsigned long)atol(buf);
-
-        if(FWsamParseOption(optp,ap))
-            LogMessage("WARNING %s (%d) => [Alert_FWsam](AlertFWamOptionInit) Possible option problem. Using %s[%s],%lu.\n",file_name,file_line,(optp->who==FWSAM_WHO_SRC)?"src":"dst",(optp->how==FWSAM_HOW_IN)?"in":((optp->how==FWSAM_HOW_OUT)?"out":"either"),optp->duration);
+	if(ap_gid != NULL && (*ap_gid=='_' || *ap_gid=='-') && i_gid_size > 0)
+        {
+	   memset(&s_buf[0],0,sizeof(s_buf)); 
+	   strncpy(&s_buf[0],buf,i_gid_size);
+	   optp->gid = (unsigned long)atol(s_buf);
+	}
+        if(ap_end !=NULL && i_gid_size > 0 && i_ap_size > 0)
+        {
+	   memset(&s_buf[0],0,sizeof(s_buf));
+           strncpy(&s_buf[0],(buf+(i_gid_size+1)),(i_ap_size - i_gid_size));
+	   optp->sid = (unsigned long)atol(s_buf);
+	   *ap_end++=0;
+           if(FWsamParseOption(optp,ap_end))
+		LogMessage("WARNING %s (%d) => [Alert_FWsam](AlertFWamOptionInit) Possible option problem. Using %s[%s],%lu.\n",file_name,file_line,(optp->who==FWSAM_WHO_SRC)?"src":"dst",(optp->how==FWSAM_HOW_IN)?"in":((optp->how==FWSAM_HOW_OUT)?"out":"either"),optp->duration);
+        } else
+	{
+           optp->sid=0;
+           optp->gid=0;
+        }
     }
-    else
-        optp->sid=0;
+    if(b_gid!=1)
+    {
+      ap=buf;
+      if(*ap)
+      {        
+	 while(*ap && *ap!=':' && *ap!='|') ap++;
+         *ap++ =0;
+         while(*ap && (*ap==':' || *ap=='|')) ap++;
+         optp->sid=(unsigned long)atol(buf);
+         optp->gid=1;
+         if(FWsamParseOption(optp,ap))
+            LogMessage("WARNING %s (%d) => [Alert_FWsam](AlertFWamOptionInit) Possible option problem. Using %s[%s],%lu.\n",file_name,file_line,(optp->who==FWSAM_WHO_SRC)?"src":"dst",(optp->how==FWSAM_HOW_IN)?"in":((optp->how==FWSAM_HOW_OUT)?"out":"either"),optp->duration);
+       } else
+       {
+          optp->sid=0;
+          optp->gid=0;
+       }
+    }
 }
 
 
@@ -915,7 +961,7 @@ char *inettoa(unsigned long ip)
  *  by the sid-block.map file and return a pointer
  *  to the matching record.
 */
-FWsamOptions *FWsamGetOption(unsigned long sid)
+FWsamOptions *FWsamGetOption(unsigned long sid, unsigned long gid)
 {
     signed long i,step,diff,o,o2;
 
@@ -926,7 +972,7 @@ FWsamOptions *FWsamGetOption(unsigned long sid)
     {
         diff=sid-FWsamOptionField[i].sid;
         if(!diff)
-            return &(FWsamOptionField[i]);
+            if(FWsamOptionField[i].gid==gid) return &(FWsamOptionField[i]);
         if(step>1)
             step=step>>1;
         o2=o;
@@ -938,7 +984,7 @@ FWsamOptions *FWsamGetOption(unsigned long sid)
     }
 #else                       /* This is just a sequential list lookup */
     for(i=0;i<FWsamMaxOptions;i++)
-        if(FWsamOptionField[i].sid==sid)
+        if(FWsamOptionField[i].sid==sid && FWsamOptionField[i].gid==gid)
             return &(FWsamOptionField[i]);
 #endif
     return NULL;
@@ -1025,7 +1071,7 @@ void AlertFWsam(Packet *p, void *event, uint32_t event_type, void *arg)
     cn = ClassTypeLookupById(barnyard2_conf, ntohl(((Unified2EventCommon *)event)->classification_id));
 
     if(FWsamOptionField)            /* If using the file (field present), let's use that */
-        optp=FWsamGetOption(ntohl(((Unified2EventCommon *)event)->signature_id));
+        optp=FWsamGetOption(ntohl(((Unified2EventCommon *)event)->signature_id),ntohl(((Unified2EventCommon *)event)->generator_id));
 
     if(optp)    /* if options specified for this rule */
     {
