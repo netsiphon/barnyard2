@@ -842,7 +842,7 @@ void FWsamParseLine(FWsamOptions *optp,char *buf)
         if(isupper(*ap))        /* and set to lower case */
             *ap=tolower(*ap);
 
-	if(*ap=='_'||*ap=='-')
+        if(*ap=='_'||*ap=='-')
         {
             ap_gid=ap;
             i_gid_size=i_ap_size;
@@ -860,43 +860,43 @@ void FWsamParseLine(FWsamOptions *optp,char *buf)
     
     if(b_gid==1)
     {
-	if(ap_gid != NULL && (*ap_gid=='_' || *ap_gid=='-') && i_gid_size > 0)
+        if(ap_gid != NULL && (*ap_gid=='_' || *ap_gid=='-') && i_gid_size > 0)
         {
-	   memset(&s_buf[0],0,sizeof(s_buf));
-           strlcpy(&s_buf[0],buf,i_gid_size);
-	   optp->gid = (unsigned long)atol(s_buf);
+            memset(&s_buf[0],0,sizeof(s_buf));
+            strlcpy(&s_buf[0],buf,i_gid_size);
+            optp->gid = (unsigned long)atol(s_buf);
 	}
         if(ap_end !=NULL && i_gid_size > 0 && i_ap_size > 0)
         {
-	   memset(&s_buf[0],0,sizeof(s_buf));
-           strlcpy(&s_buf[0],(buf+(i_gid_size+1)),(i_ap_size - i_gid_size));
-	   optp->sid = (unsigned long)atol(s_buf);
-	   *ap_end++=0;
-           if(FWsamParseOption(optp,ap_end))
-		LogMessage("WARNING %s (%d) => [Alert_FWsam](AlertFWamOptionInit) Possible option problem. Using %s[%s],%lu.\n",file_name,file_line,(optp->who==FWSAM_WHO_SRC)?"src":"dst",(optp->how==FWSAM_HOW_IN)?"in":((optp->how==FWSAM_HOW_OUT)?"out":"either"),optp->duration);
+	    memset(&s_buf[0],0,sizeof(s_buf));
+            strlcpy(&s_buf[0],(buf+(i_gid_size+1)),(i_ap_size - i_gid_size));
+            optp->sid = (unsigned long)atol(s_buf);
+            *ap_end++=0;
+            if(FWsamParseOption(optp,ap_end))
+                LogMessage("WARNING %s (%d) => [Alert_FWsam](AlertFWamOptionInit) Possible option problem. Using %s[%s],%lu.\n",file_name,file_line,(optp->who==FWSAM_WHO_SRC)?"src":"dst",(optp->how==FWSAM_HOW_IN)?"in":((optp->how==FWSAM_HOW_OUT)?"out":"either"),optp->duration);
         } else
 	{
-           optp->sid=0;
-           optp->gid=0;
+            optp->sid=0;
+            optp->gid=0;
         }
     }
     if(b_gid!=1)
     {
-      ap=buf;
-      if(*ap)
-      {        
-	 while(*ap && *ap!=':' && *ap!='|') ap++;
-         *ap++ =0;
-         while(*ap && (*ap==':' || *ap=='|')) ap++;
-         optp->sid=(unsigned long)atol(buf);
-         optp->gid=1;
-         if(FWsamParseOption(optp,ap))
-            LogMessage("WARNING %s (%d) => [Alert_FWsam](AlertFWamOptionInit) Possible option problem. Using %s[%s],%lu.\n",file_name,file_line,(optp->who==FWSAM_WHO_SRC)?"src":"dst",(optp->how==FWSAM_HOW_IN)?"in":((optp->how==FWSAM_HOW_OUT)?"out":"either"),optp->duration);
-       } else
-       {
-          optp->sid=0;
-          optp->gid=0;
-       }
+        ap=buf;
+        if(*ap)
+        {
+	    while(*ap && *ap!=':' && *ap!='|') ap++;
+             *ap++ =0;
+             while(*ap && (*ap==':' || *ap=='|')) ap++;
+             optp->sid=(unsigned long)atol(buf);
+             optp->gid=1;
+             if(FWsamParseOption(optp,ap))
+                 LogMessage("WARNING %s (%d) => [Alert_FWsam](AlertFWamOptionInit) Possible option problem. Using %s[%s],%lu.\n",file_name,file_line,(optp->who==FWSAM_WHO_SRC)?"src":"dst",(optp->how==FWSAM_HOW_IN)?"in":((optp->how==FWSAM_HOW_OUT)?"out":"either"),optp->duration);
+         } else
+         {
+             optp->sid=0;
+             optp->gid=0;
+         }
     }
 }
 
