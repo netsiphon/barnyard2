@@ -362,17 +362,19 @@ void AlertFWsamInit(char *args)
 
     if(!FWsamOptionField && !FWsamMaxOptions)
     {
-        strncpy(buf, barnyard2_conf->config_dir, sizeof(buf)-1);
-        strncpy(buf+strlen(buf), SID_MAPFILE, sizeof(buf)-strlen(buf)-1);
+        strlcpy(buf, barnyard2_conf->config_dir, sizeof(buf)-1);
+        strlcpy(buf+strlen(buf), SID_MAPFILE, sizeof(buf)-strlen(buf)-1);
 #ifdef FWSAMDEBUG
         LogMessage("DEBUG => [Alert_FWsam](AlertFWsamSetup) Using file: %s\n",buf);
 #endif
         fp=fopen(buf,"rt");
         if(!fp)
         {
-            strncpy(buf, barnyard2_conf->config_dir, sizeof(buf)-1);
-            strncpy(buf+strlen(buf), SID_ALT_MAPFILE, sizeof(buf)-strlen(buf)-1);
+            strlcpy(buf, barnyard2_conf->config_dir, sizeof(buf)-1);
+            strlcpy(buf+strlen(buf), SID_ALT_MAPFILE, sizeof(buf)-strlen(buf)-1);
+#ifdef FWSAMDEBUG
             LogMessage("DEBUG => [Alert_FWsam](AlertFWsamSetup) Using alternative file: %s\n",buf);
+#endif
             fp=fopen(buf,"rt");
         }
 
@@ -496,7 +498,7 @@ void AlertFWsamInit(char *args)
                 station->stationport=FWSAM_DEFAULTPORT; /* set the default port */
 
             if(statpass!=NULL) /* if specified by user */
-                strncpy(station->stationkey,statpass,TwoFish_KEY_LENGTH); /* use defined key */
+                strlcpy(station->stationkey,statpass,TwoFish_KEY_LENGTH); /* use defined key */
             else
                 station->stationkey[0]=0;
 
@@ -843,12 +845,12 @@ void FWsamParseLine(FWsamOptions *optp,char *buf)
 	if(*ap=='_'||*ap=='-')
         {
             ap_gid=ap;
-	    i_gid_size=i_ap_size;
-	    b_gid=1;
+            i_gid_size=i_ap_size;
+            b_gid=1;
         }
         if(*ap==':' || *ap=='|') ap_end=ap;
 
-	i_ap_size++;
+        i_ap_size++;
         ap++;
     }
     while((ap=strrchr(buf,' '))!=NULL)  /* remove spaces */
@@ -860,14 +862,14 @@ void FWsamParseLine(FWsamOptions *optp,char *buf)
     {
 	if(ap_gid != NULL && (*ap_gid=='_' || *ap_gid=='-') && i_gid_size > 0)
         {
-	   memset(&s_buf[0],0,sizeof(s_buf)); 
-	   strncpy(&s_buf[0],buf,i_gid_size);
+	   memset(&s_buf[0],0,sizeof(s_buf));
+           strlcpy(&s_buf[0],buf,i_gid_size);
 	   optp->gid = (unsigned long)atol(s_buf);
 	}
         if(ap_end !=NULL && i_gid_size > 0 && i_ap_size > 0)
         {
 	   memset(&s_buf[0],0,sizeof(s_buf));
-           strncpy(&s_buf[0],(buf+(i_gid_size+1)),(i_ap_size - i_gid_size));
+           strlcpy(&s_buf[0],(buf+(i_gid_size+1)),(i_ap_size - i_gid_size));
 	   optp->sid = (unsigned long)atol(s_buf);
 	   *ap_end++=0;
            if(FWsamParseOption(optp,ap_end))
