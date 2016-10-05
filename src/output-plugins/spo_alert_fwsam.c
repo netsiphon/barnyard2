@@ -868,7 +868,7 @@ void FWsamParseLine(FWsamOptions *optp,char *buf)
 	}
         if(ap_end !=NULL && i_gid_size > 0 && i_ap_size > 0)
         {
-	    memset(&s_buf[0],0,sizeof(s_buf));
+            memset(&s_buf[0],0,sizeof(s_buf));
             strlcpy(&s_buf[0],(buf+(i_gid_size+1)),(i_ap_size - i_gid_size));
             optp->sid = (unsigned long)atol(s_buf);
             *ap_end++=0;
@@ -885,18 +885,18 @@ void FWsamParseLine(FWsamOptions *optp,char *buf)
         ap=buf;
         if(*ap)
         {
-	    while(*ap && *ap!=':' && *ap!='|') ap++;
-             *ap++ =0;
-             while(*ap && (*ap==':' || *ap=='|')) ap++;
-             optp->sid=(unsigned long)atol(buf);
-             optp->gid=1;
-             if(FWsamParseOption(optp,ap))
-                 LogMessage("WARNING %s (%d) => [Alert_FWsam](AlertFWamOptionInit) Possible option problem. Using %s[%s],%lu.\n",file_name,file_line,(optp->who==FWSAM_WHO_SRC)?"src":"dst",(optp->how==FWSAM_HOW_IN)?"in":((optp->how==FWSAM_HOW_OUT)?"out":"either"),optp->duration);
-         } else
-         {
-             optp->sid=0;
-             optp->gid=0;
-         }
+            while(*ap && *ap!=':' && *ap!='|') ap++;
+            *ap++ =0;
+            while(*ap && (*ap==':' || *ap=='|')) ap++;
+            optp->sid=(unsigned long)atol(buf);
+            optp->gid=1;
+            if(FWsamParseOption(optp,ap))
+                LogMessage("WARNING %s (%d) => [Alert_FWsam](AlertFWamOptionInit) Possible option problem. Using %s[%s],%lu.\n",file_name,file_line,(optp->who==FWSAM_WHO_SRC)?"src":"dst",(optp->how==FWSAM_HOW_IN)?"in":((optp->how==FWSAM_HOW_OUT)?"out":"either"),optp->duration);
+        } else
+        {
+            optp->sid=0;
+            optp->gid=0;
+        }
     }
 }
 
