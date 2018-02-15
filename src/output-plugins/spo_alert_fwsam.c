@@ -92,6 +92,7 @@
 #include "decode.h"
 #include "spo_alert_fwsam.h"
 #include "twofish.h"
+#include "strlcpyu.h"
 #include "plugbase.h"
 #include "unified2.h"
 #include "util.h"
